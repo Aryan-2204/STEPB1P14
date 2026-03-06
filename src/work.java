@@ -1,27 +1,38 @@
 import java.util.*;
 
-public class AnalyticsDashboard {
+class TokenBucket{
 
-    HashMap<String,Integer> pageViews = new HashMap<>();
-    HashMap<String,Set<String>> uniqueVisitors = new HashMap<>();
-    HashMap<String,Integer> trafficSource = new HashMap<>();
+    int tokens;
+    long lastRefill;
+    int max=1000;
 
-    public void processEvent(String url,String user,String source){
-
-        pageViews.put(url,pageViews.getOrDefault(url,0)+1);
-
-        uniqueVisitors.putIfAbsent(url,new HashSet<>());
-        uniqueVisitors.get(url).add(user);
-
-        trafficSource.put(source,trafficSource.getOrDefault(source,0)+1);
+    TokenBucket(){
+        tokens=max;
+        lastRefill=System.currentTimeMillis();
     }
+}
 
-    public void showTopPages(){
+public class RateLimiter{
 
-        pageViews.entrySet()
-                .stream()
-                .sorted((a,b)->b.getValue()-a.getValue())
-                .limit(10)
-                .forEach(e->System.out.println(e.getKey()+" : "+e.getValue()));
+    HashMap<String,TokenBucket> clients=new HashMap<>();
+
+    public synchronized boolean checkRateLimit(String clientId){
+
+        clients.putIfAbsent(clientId,new TokenBucket());
+        TokenBucket bucket=clients.get(clientId);
+
+        long now=System.currentTimeMillis();
+
+        if(now-bucket.lastRefill>3600000){
+            bucket.tokens=bucket.max;
+            bucket.lastRefill=now;
+        }
+
+        if(bucket.tokens>0){
+            bucket.tokens--;
+            return true;
+        }
+
+        return false;
     }
 }
