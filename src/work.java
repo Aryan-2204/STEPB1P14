@@ -1,70 +1,49 @@
 import java.util.*;
 
-public class FlashSaleInventoryManager {
+class DNSEntry {
+    String ip;
+    long expiryTime;
 
-    // productId -> stock count
-    private HashMap<String, Integer> inventory = new HashMap<>();
-
-    // productId -> waiting list (FIFO)
-    private HashMap<String, LinkedHashMap<Integer, Integer>> waitingList = new HashMap<>();
-
-    // Initialize product
-    public void addProduct(String productId, int stock) {
-        inventory.put(productId, stock);
-        waitingList.put(productId, new LinkedHashMap<>());
+    DNSEntry(String ip, int ttl) {
+        this.ip = ip;
+        this.expiryTime = System.currentTimeMillis() + ttl * 1000;
     }
 
-    // Check stock availability
-    public int checkStock(String productId) {
-        return inventory.getOrDefault(productId, 0);
+    boolean isExpired() {
+        return System.currentTimeMillis() > expiryTime;
     }
+}
 
-    // Purchase item (thread-safe)
-    public synchronized String purchaseItem(String productId, int userId) {
+public class DNSCache {
 
-        int stock = inventory.getOrDefault(productId, 0);
+    HashMap<String, DNSEntry> cache = new HashMap<>();
+    int hits = 0, misses = 0;
 
-        if (stock > 0) {
-            inventory.put(productId, stock - 1);
-            return "Success, " + (stock - 1) + " units remaining";
-        } else {
-            LinkedHashMap<Integer, Integer> queue = waitingList.get(productId);
-            queue.put(userId, queue.size() + 1);
+    public String resolve(String domain) {
 
-            return "Added to waiting list, position #" + queue.size();
+        if (cache.containsKey(domain)) {
+            DNSEntry entry = cache.get(domain);
+
+            if (!entry.isExpired()) {
+                hits++;
+                return "Cache HIT → " + entry.ip;
+            }
         }
+
+        misses++;
+
+        // simulate upstream DNS
+        String newIP = "172.217." + new Random().nextInt(100) + ".1";
+
+        cache.put(domain, new DNSEntry(newIP, 300));
+
+        return "Cache MISS → " + newIP;
     }
 
-    // Show waiting list
-    public void showWaitingList(String productId) {
+    public void stats() {
+        int total = hits + misses;
+        double hitRate = (hits * 100.0) / total;
 
-        LinkedHashMap<Integer, Integer> queue = waitingList.get(productId);
-
-        System.out.println("Waiting List:");
-        for (Map.Entry<Integer, Integer> entry : queue.entrySet()) {
-            System.out.println("User " + entry.getKey() +
-                    " Position " + entry.getValue());
-        }
-    }
-
-    // Main method
-    public static void main(String[] args) {
-
-        FlashSaleInventoryManager manager = new FlashSaleInventoryManager();
-
-        manager.addProduct("IPHONE15_256GB", 3);
-
-        System.out.println("Stock: " +
-                manager.checkStock("IPHONE15_256GB") + " units available");
-
-        System.out.println(manager.purchaseItem("IPHONE15_256GB", 12345));
-        System.out.println(manager.purchaseItem("IPHONE15_256GB", 67890));
-        System.out.println(manager.purchaseItem("IPHONE15_256GB", 11111));
-
-        // stock finished
-        System.out.println(manager.purchaseItem("IPHONE15_256GB", 99999));
-        System.out.println(manager.purchaseItem("IPHONE15_256GB", 88888));
-
-        manager.showWaitingList("IPHONE15_256GB");
+        System.out.println("Hit Rate: " + hitRate + "%");
     }
 }
