@@ -1,32 +1,21 @@
-class ParkingLot{
+import java.util.*;
 
-    String[] spots=new String[500];
+public class TwoSumFraud {
 
-    int hash(String plate){
-        return Math.abs(plate.hashCode())%spots.length;
-    }
+    public void findTwoSum(int[] arr,int target){
 
-    public void park(String plate){
+        HashMap<Integer,Integer> map=new HashMap<>();
 
-        int index=hash(plate);
+        for(int i=0;i<arr.length;i++){
 
-        while(spots[index]!=null)
-            index=(index+1)%spots.length;
+            int complement=target-arr[i];
 
-        spots[index]=plate;
+            if(map.containsKey(complement)){
 
-        System.out.println("Vehicle "+plate+" parked at "+index);
-    }
-
-    public void exit(String plate){
-
-        for(int i=0;i<spots.length;i++){
-
-            if(plate.equals(spots[i])){
-                spots[i]=null;
-                System.out.println("Vehicle exited spot "+i);
-                return;
+                System.out.println("Pair found: "+arr[i]+" + "+complement);
             }
+
+            map.put(arr[i],i);
         }
     }
 }
