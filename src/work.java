@@ -1,25 +1,34 @@
 import java.util.*;
 
-public class MultiLevelCache {
+public class UsernameChecker {
 
-    LinkedHashMap<String,String> L1=new LinkedHashMap<>(10000,0.75f,true);
-    HashMap<String,String> L2=new HashMap<>();
+    HashMap<String, Integer> users = new HashMap<>();
+    HashMap<String, Integer> attempts = new HashMap<>();
 
-    public String getVideo(String id){
+    public boolean checkAvailability(String username) {
+        attempts.put(username, attempts.getOrDefault(username, 0) + 1);
+        return !users.containsKey(username);
+    }
 
-        if(L1.containsKey(id)){
-            return "L1 HIT";
+    public void registerUser(String username, int userId) {
+        users.put(username, userId);
+    }
+
+    public List<String> suggestAlternatives(String username) {
+        List<String> suggestions = new ArrayList<>();
+
+        for (int i = 1; i <= 3; i++) {
+            String newName = username + i;
+            if (!users.containsKey(newName))
+                suggestions.add(newName);
         }
 
-        if(L2.containsKey(id)){
-            L1.put(id,L2.get(id));
-            return "L2 HIT → promoted to L1";
-        }
+        suggestions.add(username.replace("_", "."));
+        return suggestions;
+    }
 
-        String data="VideoData-"+id;
-
-        L2.put(id,data);
-
-        return "L3 Database HIT";
+    public String getMostAttempted() {
+        return Collections.max(attempts.entrySet(),
+                Map.Entry.comparingByValue()).getKey();
     }
 }
