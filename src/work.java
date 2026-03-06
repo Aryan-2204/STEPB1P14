@@ -1,49 +1,43 @@
 import java.util.*;
 
-class DNSEntry {
-    String ip;
-    long expiryTime;
+public class PlagiarismDetector {
 
-    DNSEntry(String ip, int ttl) {
-        this.ip = ip;
-        this.expiryTime = System.currentTimeMillis() + ttl * 1000;
-    }
+    HashMap<String, Set<String>> ngramIndex = new HashMap<>();
 
-    boolean isExpired() {
-        return System.currentTimeMillis() > expiryTime;
-    }
-}
+    public List<String> generateNgrams(String text, int n) {
+        String[] words = text.split(" ");
+        List<String> ngrams = new ArrayList<>();
 
-public class DNSCache {
+        for (int i = 0; i <= words.length - n; i++) {
+            String gram = "";
+            for (int j = 0; j < n; j++)
+                gram += words[i + j] + " ";
 
-    HashMap<String, DNSEntry> cache = new HashMap<>();
-    int hits = 0, misses = 0;
-
-    public String resolve(String domain) {
-
-        if (cache.containsKey(domain)) {
-            DNSEntry entry = cache.get(domain);
-
-            if (!entry.isExpired()) {
-                hits++;
-                return "Cache HIT → " + entry.ip;
-            }
+            ngrams.add(gram.trim());
         }
 
-        misses++;
-
-        // simulate upstream DNS
-        String newIP = "172.217." + new Random().nextInt(100) + ".1";
-
-        cache.put(domain, new DNSEntry(newIP, 300));
-
-        return "Cache MISS → " + newIP;
+        return ngrams;
     }
 
-    public void stats() {
-        int total = hits + misses;
-        double hitRate = (hits * 100.0) / total;
+    public void indexDocument(String docId, String text) {
 
-        System.out.println("Hit Rate: " + hitRate + "%");
+        for (String gram : generateNgrams(text, 5)) {
+
+            ngramIndex.putIfAbsent(gram, new HashSet<>());
+            ngramIndex.get(gram).add(docId);
+        }
+    }
+
+    public void checkDocument(String text) {
+
+        int matches = 0;
+
+        for (String gram : generateNgrams(text, 5)) {
+
+            if (ngramIndex.containsKey(gram))
+                matches++;
+        }
+
+        System.out.println("Matching n-grams: " + matches);
     }
 }
