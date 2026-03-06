@@ -1,38 +1,21 @@
 import java.util.*;
 
-class TokenBucket{
+public class AutoCompleteSystem {
 
-    int tokens;
-    long lastRefill;
-    int max=1000;
+    HashMap<String,Integer> queryFreq=new HashMap<>();
 
-    TokenBucket(){
-        tokens=max;
-        lastRefill=System.currentTimeMillis();
+    public void updateFrequency(String query){
+
+        queryFreq.put(query,queryFreq.getOrDefault(query,0)+1);
     }
-}
 
-public class RateLimiter{
+    public void search(String prefix){
 
-    HashMap<String,TokenBucket> clients=new HashMap<>();
-
-    public synchronized boolean checkRateLimit(String clientId){
-
-        clients.putIfAbsent(clientId,new TokenBucket());
-        TokenBucket bucket=clients.get(clientId);
-
-        long now=System.currentTimeMillis();
-
-        if(now-bucket.lastRefill>3600000){
-            bucket.tokens=bucket.max;
-            bucket.lastRefill=now;
-        }
-
-        if(bucket.tokens>0){
-            bucket.tokens--;
-            return true;
-        }
-
-        return false;
+        queryFreq.entrySet()
+                .stream()
+                .filter(e->e.getKey().startsWith(prefix))
+                .sorted((a,b)->b.getValue()-a.getValue())
+                .limit(10)
+                .forEach(e->System.out.println(e.getKey()+" "+e.getValue()));
     }
 }
