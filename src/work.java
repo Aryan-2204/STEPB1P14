@@ -1,34 +1,29 @@
 import java.util.*;
 
-public class UsernameChecker {
+public class FlashSaleInventory {
 
-    HashMap<String, Integer> users = new HashMap<>();
-    HashMap<String, Integer> attempts = new HashMap<>();
+    HashMap<String, Integer> stock = new HashMap<>();
+    HashMap<String, Queue<Integer>> waitingList = new HashMap<>();
 
-    public boolean checkAvailability(String username) {
-        attempts.put(username, attempts.getOrDefault(username, 0) + 1);
-        return !users.containsKey(username);
+    public void addProduct(String productId, int quantity) {
+        stock.put(productId, quantity);
+        waitingList.put(productId, new LinkedList<>());
     }
 
-    public void registerUser(String username, int userId) {
-        users.put(username, userId);
-    }
+    public synchronized String purchaseItem(String productId, int userId) {
 
-    public List<String> suggestAlternatives(String username) {
-        List<String> suggestions = new ArrayList<>();
+        int available = stock.getOrDefault(productId, 0);
 
-        for (int i = 1; i <= 3; i++) {
-            String newName = username + i;
-            if (!users.containsKey(newName))
-                suggestions.add(newName);
+        if (available > 0) {
+            stock.put(productId, available - 1);
+            return "Success, remaining: " + (available - 1);
         }
 
-        suggestions.add(username.replace("_", "."));
-        return suggestions;
+        waitingList.get(productId).add(userId);
+        return "Added to waiting list, position #" + waitingList.get(productId).size();
     }
 
-    public String getMostAttempted() {
-        return Collections.max(attempts.entrySet(),
-                Map.Entry.comparingByValue()).getKey();
+    public int checkStock(String productId) {
+        return stock.getOrDefault(productId, 0);
     }
 }
