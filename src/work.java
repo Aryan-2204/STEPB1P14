@@ -1,21 +1,32 @@
-import java.util.*;
+class ParkingLot{
 
-public class AutoCompleteSystem {
+    String[] spots=new String[500];
 
-    HashMap<String,Integer> queryFreq=new HashMap<>();
-
-    public void updateFrequency(String query){
-
-        queryFreq.put(query,queryFreq.getOrDefault(query,0)+1);
+    int hash(String plate){
+        return Math.abs(plate.hashCode())%spots.length;
     }
 
-    public void search(String prefix){
+    public void park(String plate){
 
-        queryFreq.entrySet()
-                .stream()
-                .filter(e->e.getKey().startsWith(prefix))
-                .sorted((a,b)->b.getValue()-a.getValue())
-                .limit(10)
-                .forEach(e->System.out.println(e.getKey()+" "+e.getValue()));
+        int index=hash(plate);
+
+        while(spots[index]!=null)
+            index=(index+1)%spots.length;
+
+        spots[index]=plate;
+
+        System.out.println("Vehicle "+plate+" parked at "+index);
+    }
+
+    public void exit(String plate){
+
+        for(int i=0;i<spots.length;i++){
+
+            if(plate.equals(spots[i])){
+                spots[i]=null;
+                System.out.println("Vehicle exited spot "+i);
+                return;
+            }
+        }
     }
 }
