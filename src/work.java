@@ -1,43 +1,27 @@
 import java.util.*;
 
-public class PlagiarismDetector {
+public class AnalyticsDashboard {
 
-    HashMap<String, Set<String>> ngramIndex = new HashMap<>();
+    HashMap<String,Integer> pageViews = new HashMap<>();
+    HashMap<String,Set<String>> uniqueVisitors = new HashMap<>();
+    HashMap<String,Integer> trafficSource = new HashMap<>();
 
-    public List<String> generateNgrams(String text, int n) {
-        String[] words = text.split(" ");
-        List<String> ngrams = new ArrayList<>();
+    public void processEvent(String url,String user,String source){
 
-        for (int i = 0; i <= words.length - n; i++) {
-            String gram = "";
-            for (int j = 0; j < n; j++)
-                gram += words[i + j] + " ";
+        pageViews.put(url,pageViews.getOrDefault(url,0)+1);
 
-            ngrams.add(gram.trim());
-        }
+        uniqueVisitors.putIfAbsent(url,new HashSet<>());
+        uniqueVisitors.get(url).add(user);
 
-        return ngrams;
+        trafficSource.put(source,trafficSource.getOrDefault(source,0)+1);
     }
 
-    public void indexDocument(String docId, String text) {
+    public void showTopPages(){
 
-        for (String gram : generateNgrams(text, 5)) {
-
-            ngramIndex.putIfAbsent(gram, new HashSet<>());
-            ngramIndex.get(gram).add(docId);
-        }
-    }
-
-    public void checkDocument(String text) {
-
-        int matches = 0;
-
-        for (String gram : generateNgrams(text, 5)) {
-
-            if (ngramIndex.containsKey(gram))
-                matches++;
-        }
-
-        System.out.println("Matching n-grams: " + matches);
+        pageViews.entrySet()
+                .stream()
+                .sorted((a,b)->b.getValue()-a.getValue())
+                .limit(10)
+                .forEach(e->System.out.println(e.getKey()+" : "+e.getValue()));
     }
 }
