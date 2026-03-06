@@ -1,81 +1,70 @@
 import java.util.*;
 
-public class UsernameChecker {
+public class FlashSaleInventoryManager {
 
-    // username -> userId
-    private HashMap<String, Integer> users = new HashMap<>();
+    // productId -> stock count
+    private HashMap<String, Integer> inventory = new HashMap<>();
 
-    // username -> number of attempts
-    private HashMap<String, Integer> attempts = new HashMap<>();
+    // productId -> waiting list (FIFO)
+    private HashMap<String, LinkedHashMap<Integer, Integer>> waitingList = new HashMap<>();
 
-    // Constructor with some existing users
-    public UsernameChecker() {
-        users.put("john_doe", 101);
-        users.put("admin", 1);
-        users.put("alex99", 202);
+    // Initialize product
+    public void addProduct(String productId, int stock) {
+        inventory.put(productId, stock);
+        waitingList.put(productId, new LinkedHashMap<>());
     }
 
-    // Check username availability
-    public boolean checkAvailability(String username) {
-
-        // track attempts
-        attempts.put(username, attempts.getOrDefault(username, 0) + 1);
-
-        return !users.containsKey(username);
+    // Check stock availability
+    public int checkStock(String productId) {
+        return inventory.getOrDefault(productId, 0);
     }
 
-    // Suggest alternatives
-    public List<String> suggestAlternatives(String username) {
+    // Purchase item (thread-safe)
+    public synchronized String purchaseItem(String productId, int userId) {
 
-        List<String> suggestions = new ArrayList<>();
+        int stock = inventory.getOrDefault(productId, 0);
 
-        for (int i = 1; i <= 5; i++) {
-            String suggestion = username + i;
+        if (stock > 0) {
+            inventory.put(productId, stock - 1);
+            return "Success, " + (stock - 1) + " units remaining";
+        } else {
+            LinkedHashMap<Integer, Integer> queue = waitingList.get(productId);
+            queue.put(userId, queue.size() + 1);
 
-            if (!users.containsKey(suggestion)) {
-                suggestions.add(suggestion);
-            }
+            return "Added to waiting list, position #" + queue.size();
         }
-
-        String dotSuggestion = username.replace("_", ".");
-        if (!users.containsKey(dotSuggestion)) {
-            suggestions.add(dotSuggestion);
-        }
-
-        return suggestions;
     }
 
-    // Get most attempted username
-    public String getMostAttempted() {
+    // Show waiting list
+    public void showWaitingList(String productId) {
 
-        String maxUser = "";
-        int maxCount = 0;
+        LinkedHashMap<Integer, Integer> queue = waitingList.get(productId);
 
-        for (Map.Entry<String, Integer> entry : attempts.entrySet()) {
-            if (entry.getValue() > maxCount) {
-                maxCount = entry.getValue();
-                maxUser = entry.getKey();
-            }
+        System.out.println("Waiting List:");
+        for (Map.Entry<Integer, Integer> entry : queue.entrySet()) {
+            System.out.println("User " + entry.getKey() +
+                    " Position " + entry.getValue());
         }
-
-        return maxUser + " (" + maxCount + " attempts)";
     }
 
-    // Main method for testing
+    // Main method
     public static void main(String[] args) {
 
-        UsernameChecker checker = new UsernameChecker();
+        FlashSaleInventoryManager manager = new FlashSaleInventoryManager();
 
-        System.out.println("john_doe available: " + checker.checkAvailability("john_doe"));
-        System.out.println("jane_smith available: " + checker.checkAvailability("jane_smith"));
+        manager.addProduct("IPHONE15_256GB", 3);
 
-        System.out.println("Suggestions for john_doe: " + checker.suggestAlternatives("john_doe"));
+        System.out.println("Stock: " +
+                manager.checkStock("IPHONE15_256GB") + " units available");
 
-        // simulate repeated attempts
-        checker.checkAvailability("admin");
-        checker.checkAvailability("admin");
-        checker.checkAvailability("admin");
+        System.out.println(manager.purchaseItem("IPHONE15_256GB", 12345));
+        System.out.println(manager.purchaseItem("IPHONE15_256GB", 67890));
+        System.out.println(manager.purchaseItem("IPHONE15_256GB", 11111));
 
-        System.out.println("Most attempted username: " + checker.getMostAttempted());
+        // stock finished
+        System.out.println(manager.purchaseItem("IPHONE15_256GB", 99999));
+        System.out.println(manager.purchaseItem("IPHONE15_256GB", 88888));
+
+        manager.showWaitingList("IPHONE15_256GB");
     }
 }
